@@ -1,0 +1,47 @@
+version: '3.8' # تحديد إصدار ملف Docker Compose المستخدم
+
+services: # قسم تعريف الخدمات (الحاويات) التي سيتم تشغيلها
+  nginx: # خدمة خادم الويب Nginx
+    image: nginx:1.25-alpine # استخدام صورة Nginx خفيفة مبنية على Alpine Linux
+    ports: # تعيين المنافذ (Ports)
+      - "8080:80" # ربط المنفذ 8080 في الجهاز المضيف بالمنفذ 80 داخل الحاوية
+    volumes: # ربط الملفات أو المجلدات من المضيف إلى الحاوية
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro # ربط ملف إعدادات nginx المحلي بالملف داخل الحاوية للقراءة فقط (ro)
+      - ./frontend:/usr/share/nginx/html:ro # ربط مجلد الواجهة الأمامية ليتم تقديمه عبر Nginx
+    depends_on: # تحديد اعتمادية الخدمة (لا تبدأ هذه الخدمة إلا بعد بدء خدمة api)
+      - api
+    networks: # تحديد الشبكة التي ستتصل بها هذه الخدمة
+      - app-network
+
+  api: # خدمة الواجهة البرمجية (API) المبنية بـ Flask
+    build: # إعدادات بناء الصورة محلياً بدلاً من تحميلها
+      context: ./api # مسار المجلد الذي يحتوي على كود الـ API وملف Dockerfile
+      dockerfile: Dockerfile # اسم ملف Dockerfile المستخدم للبناء
+    environment: # تعريف متغيرات البيئة للخدمة
+      - DB_HOST=database # عنوان خادم قاعدة البيانات (نفس اسم خدمة قاعدة البيانات أدناه)
+      - DB_NAME=device_db # اسم قاعدة البيانات
+      - DB_USER=user # اسم مستخدم قاعدة البيانات
+      - DB_PASSWORD=password # كلمة مرور قاعدة البيانات
+    depends_on: # تأجيل بدء خدمة الـ API حتى تعمل خدمة قاعدة البيانات
+      - database
+    networks: # تحديد الشبكة
+      - app-network
+
+  database: # خدمة قاعدة البيانات PostgreSQL
+    image: postgres:15-alpine # استخدام صورة PostgreSQL إصدار 15 مبنية على Alpine
+    environment: # متغيرات البيئة لتهيئة قاعدة البيانات عند أول تشغيل
+      - POSTGRES_DB=device_db # اسم قاعدة البيانات الافتراضية
+      - POSTGRES_USER=user # اسم المستخدم الافتراضي
+      - POSTGRES_PASSWORD=password # كلمة المرور الافتراضية
+    volumes: # إدارة التخزين
+      - db-data:/var/lib/postgresql/data # استخدام وحدة تخزين (Volume) دائمة لحفظ البيانات حتى لا تضيع عند إيقاف الحاوية
+      - ./database/initialization:/docker-entrypoint-initdb.d:ro # تشغيل نصوص التهيئة (SQL) الموجودة في المجلد المحلي عند إنشاء قاعدة البيانات لأول مرة
+    networks: # الشبكة
+      - app-network
+
+networks: # تعريف الشبكات المخصصة
+  app-network: # شبكة داخلية للتواصل بين الحاويات
+    driver: bridge # استخدام نوع 'bridge' الافتراضي للشبكات المحلية
+
+volumes: # تعريف وحدات التخزين الدائمة
+  db-data: # مساحة تخزين باسم db-data لبيانات PostgreSQL

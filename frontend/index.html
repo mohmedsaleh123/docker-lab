@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الأجهزة - لوحة التحكم</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --dark: #2b2d42;
+            --light: #f8f9fa;
+            --gray: #8d99ae;
+        }
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            margin: 0; 
+            background-color: #edf2f4; 
+            color: var(--dark);
+        }
+        .header {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .header h1 { margin: 0; color: var(--primary); font-weight: 700; }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 0 20px;
+        }
+        .card {
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+        .card-title {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            color: var(--dark);
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group.full-width { grid-column: span 2; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: var(--gray); }
+        .form-group input, .form-group select { 
+            width: 100%; 
+            padding: 10px 15px; 
+            border: 1px solid #dfe6e9; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-family: 'Cairo', sans-serif;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .actions { margin-top: 20px; display: flex; gap: 10px; }
+        button { 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-family: 'Cairo', sans-serif;
+            font-weight: 600;
+            transition: opacity 0.3s, transform 0.1s;
+        }
+        button:active { transform: scale(0.98); }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-secondary { background-color: var(--gray); color: white; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-warning { background-color: var(--warning); color: var(--dark); }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; border-bottom: 1px solid #eee; text-align: right; }
+        th { color: var(--gray); font-weight: 600; font-size: 0.9rem; }
+        tr:hover { background-color: var(--light); }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: white;
+        }
+        .badge-active { background-color: var(--success); }
+        .badge-inactive { background-color: var(--gray); }
+
+        .action-btns { display: flex; gap: 5px; }
+        .action-btns button { padding: 6px 12px; font-size: 0.8rem; }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .toast {
+            background-color: var(--dark);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { border-right: 4px solid var(--success); }
+        .toast.error { border-right: 4px solid var(--danger); }
+
+        .empty-state { text-align: center; padding: 30px; color: var(--gray); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>نظام إدارة الأجهزة</h1>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h3 class="card-title" id="formTitle">إضافة جهاز جديد</h3>
+        <form id="deviceForm">
+            <input type="hidden" id="deviceId">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="name">اسم الجهاز:</label>
+                    <input type="text" id="name" placeholder="مثال: مستشعر حرارة" required>
+                </div>
+                <div class="form-group">
+                    <label for="type">نوع الجهاز:</label>
+                    <input type="text" id="type" placeholder="مثال: Temperature">
+                </div>
+                <div class="form-group">
+                    <label for="status">الحالة:</label>
+                    <select id="status">
+                        <option value="Active">نشط</option>
+                        <option value="Inactive">غير نشط</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="location">موقع الجهاز:</label>
+                    <input type="text" id="location" placeholder="مثال: الغرفة 101">
+                </div>
+            </div>
+            <div class="actions">
+                <button type="submit" id="submitBtn" class="btn-primary">حفظ الجهاز</button>
+                <button type="button" id="cancelBtn" class="btn-secondary" style="display:none;">إلغاء التعديل</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">قائمة الأجهزة المسجلة</h3>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>الرقم</th>
+                        <th>الاسم</th>
+                        <th>النوع</th>
+                        <th>الحالة</th>
+                        <th>الموقع</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="deviceTableBody">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+    const apiUrl = '/api/resources';
+
+    document.addEventListener('DOMContentLoaded', loadDevices);
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerText = message;
+        container.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    const form = document.getElementById('deviceForm');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const id = document.getElementById('deviceId').value;
+        const deviceData = {
+            name: document.getElementById('name').value,
+            type: document.getElementById('type').value,
+            status: document.getElementById('status').value,
+            location: document.getElementById('location').value
+        };
+
+        try {
+            if (id) {
+                const res = await fetch(`${apiUrl}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(deviceData)
+                });
+                if(!res.ok) throw new Error();
+                showToast('تم تحديث بيانات الجهاز بنجاح');
+            } else {
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(deviceData)
+                });
+                if(!res.ok) throw new Error();
+                showToast('تمت إضافة الجهاز الجديد بنجاح');
+            }
+            resetForm();
+            loadDevices();
+        } catch (error) {
+            showToast('حدث خطأ أثناء حفظ البيانات', 'error');
+        }
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', resetForm);
+
+    function resetForm() {
+        form.reset();
+        document.getElementById('deviceId').value = '';
+        document.getElementById('formTitle').innerText = 'إضافة جهاز جديد';
+        document.getElementById('submitBtn').innerText = 'حفظ الجهاز';
+        document.getElementById('cancelBtn').style.display = 'none';
+    }
+
+    async function loadDevices() {
+        try {
+            const response = await fetch(apiUrl);
+            if(!response.ok) throw new Error();
+            const devices = await response.json();
+            const tbody = document.getElementById('deviceTableBody');
+            tbody.innerHTML = '';
+            
+            if (devices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">لا توجد أجهزة مسجلة حالياً</td></tr>';
+                return;
+            }
+
+            devices.forEach(device => {
+                const statusBadge = device.status.toLowerCase() === 'active' || device.status === 'نشط'
+                    ? '<span class="badge badge-active">نشط</span>' 
+                    : '<span class="badge badge-inactive">غير نشط</span>';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>#${device.id}</strong></td>
+                    <td>${device.name}</td>
+                    <td>${device.type}</td>
+                    <td>${statusBadge}</td>
+                    <td>${device.location}</td>
+                    <td class="action-btns">
+                        <button class="btn-warning" onclick="editDevice(${device.id}, '${device.name}', '${device.type}', '${device.status}', '${device.location}')">تعديل</button>
+                        <button class="btn-danger" onclick="deleteDevice(${device.id})">حذف</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            showToast('حدث خطأ أثناء جلب الأجهزة', 'error');
+            document.getElementById('deviceTableBody').innerHTML = '<tr><td colspan="6" class="empty-state" style="color:var(--danger)">فشل الاتصال بالخادم</td></tr>';
+        }
+    }
+
+    async function deleteDevice(id) {
+        if(confirm('هل أنت متأكد من حذف هذا الجهاز نهائياً؟')) {
+            try {
+                const res = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+                if(!res.ok) throw new Error();
+                showToast('تم حذف الجهاز بنجاح');
+                loadDevices();
+            } catch (error) {
+                showToast('حدث خطأ أثناء حذف الجهاز', 'error');
+            }
+        }
+    }
+
+    function editDevice(id, name, type, status, location) {
+        document.getElementById('deviceId').value = id;
+        document.getElementById('name').value = name;
+        document.getElementById('type').value = type;
+        
+        // Handle case sensitivity or translation mismatch in dropdown
+        const statusSelect = document.getElementById('status');
+        const optionExists = Array.from(statusSelect.options).some(opt => opt.value === status);
+        if(optionExists) statusSelect.value = status;
+        else statusSelect.value = (status.toLowerCase() === 'active' || status === 'نشط') ? 'Active' : 'Inactive';
+
+        document.getElementById('location').value = location;
+        
+        document.getElementById('formTitle').innerText = 'تعديل بيانات الجهاز #' + id;
+        document.getElementById('submitBtn').innerText = 'تحديث البيانات';
+        document.getElementById('cancelBtn').style.display = 'inline-block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+</script>
+</body>
+</html>

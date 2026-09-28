@@ -1,0 +1,5 @@
+CONTAINER ID   IMAGE                COMMAND                  CREATED          STATUS          PORTS                                         NAMES
+1bbdb26844e6   nginx:1.25-alpine    "/docker-entrypoint.…"   13 seconds ago   Up 12 seconds   0.0.0.0:8080->80/tcp, [::]:8080->80/tcp       progect_nginx_1
+f8131fb00010   progect_api          "python server.py"       14 seconds ago   Up 13 seconds   8000/tcp                                      progect_api_1
+d2ee6531063a   postgres:15-alpine   "docker-entrypoint.s…"   16 seconds ago   Up 14 seconds   5432/tcp                                      progect_database_1
+47fab5a34874   n8nio/n8n            "tini -- /docker-ent…"   3 months ago     Up 7 hours      0.0.0.0:5678->5678/tcp, [::]:5678->5678/tcp   n8n
